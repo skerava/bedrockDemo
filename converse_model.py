@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO, format="%(message)s")
 """
 
 class BedrockConfig:
-    session = boto3.Session(profile_name="skydev")
+    session = boto3.Session(profile_name="skydev") #更改为自己的profile
     client = session.client(service_name="bedrock-runtime", region_name="us-west-2")
     inference_config = {"maxTokens": 4096, "temperature": 0.9, "topP": 0.8}
     MAX_RECURSIONS = 5
@@ -54,14 +54,14 @@ class ToolUseDemo:
 
             # Send the conversation to Amazon Bedrock
             bedrock_response = self._send_conversation_to_bedrock(conversation)
-            logging.info(f"Bedrock response: {bedrock_response}")
+            #logging.info(f"Bedrock response: {bedrock_response}")
 
             # Recursively handle the model's response until the model has returned
             # its final response or the recursion counter has reached 0
             self._process_model_response(
                 bedrock_response, conversation, max_recursion=BedrockConfig.MAX_RECURSIONS
             )
-            logging.info(f"Conversation: {conversation}")
+            #logging.info(f"Conversation: {conversation}")
 
             # Repeat the loop until the user decides to exit the application
             user_input = self._get_user_input()
