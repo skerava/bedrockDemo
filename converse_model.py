@@ -3,8 +3,8 @@ import tool_use_print_utils as output
 import logging
 import os
 import importlib
-
-os.chdir("AIGC/basicClass")
+from botocore.exceptions import ClientError
+import json
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
@@ -78,6 +78,9 @@ class ToolUseDemo:
         output.call_to_bedrock(conversation)
 
         # Send the conversation, system prompt, and tool configuration, and return the response
+        #logging.info(f"BedrockConfig.client.converse(\nmodelId={self.model_id},\nmessages={conversation},\nsystem={self.system_prompt},\ntoolConfig={self.tool_config},)")
+
+        
         return BedrockConfig.client.converse(
             modelId=self.model_id,
             messages=conversation,
@@ -107,6 +110,7 @@ class ToolUseDemo:
         # Append the model's response to the ongoing conversation
         message = model_response["output"]["message"]
         conversation.append(message)
+        #logging.info(f"Conversation: {conversation}")
 
         if model_response["stopReason"] == "tool_use":
             # If the stop reason is "tool_use", forward everything to the tool use handler
@@ -149,6 +153,7 @@ class ToolUseDemo:
 
         # Append the new message to the ongoing conversation
         conversation.append(message)
+        #logging.info(f"Conversation: {conversation}")
 
         # Send the conversation to Amazon Bedrock
         response = self._send_conversation_to_bedrock(conversation)
@@ -232,6 +237,56 @@ class ToolUseDemo:
                 except (ModuleNotFoundError, AttributeError) as e:
                     logging.error(f"Error loading tool config from {tool_name}: {e}")
         return tool_configs if tool_configs else None
+    
+class GenerateContent:
+
+    def __init__(self, system_message, model_id):
+        self.system_message = [{"text": system_message}]
+        self.model_id = model_id
+
+    def generate_content(
+        self,
+        user_message,
+        client=BedrockConfig.client,
+        inference_config=BedrockConfig.inference_config,
+    ):
+        self.conversation = [
+            {"role": "user", "content": [{"text": user_message}]},
+            {"role": "assistant", "content": [{"text": "按照要求，输出如下:"}]},
+        ]
+        try:
+            for attempt in range(3):
+                response = client.converse(
+                    modelId=self.model_id,
+                    system=self.system_message,
+                    messages=self.conversation,
+                    inferenceConfig=inference_config,
+                )
+                response_text = response["output"]["message"]["content"][0]["text"]
+                text_json = self.try_json_parse(response_text)
+                if text_json is not None:
+                    return text_json
+                logging.warning(f"Attempt {attempt + 1} failed, retrying...")
+            raise ValueError("Failed to generate valid response after 3 attempts")
+        except (ClientError, Exception) as e:
+            print(f"ERROR: Can't invoke '{self.model_id}'. Reason: {e}")
+            exit(1)
+
+    @staticmethod
+    def read_file(file_path):
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File not found at: {file_path}")
+        with open(file_path, "r", encoding="utf-8") as file:
+            return file.read()
+        
+        # 写一个静态方法，将输入尝试转化成json，失败则返回None
+    @staticmethod
+    def try_json_parse(input):
+        try:
+            return json.loads(input)
+        except json.JSONDecodeError:
+            return None
+
 
 def main():
     system_prompt = input("请输入system_prompt: ")

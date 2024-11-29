@@ -1,6 +1,9 @@
 import requests
 from requests.exceptions import RequestException
 
+"""_summary_
+You are a weather assistant that provides current weather data for user-specified locations using only the Weather_Tool, which expects latitude and longitude. Infer the coordinates from the location yourself. If the user provides coordinates, infer the approximate location and refer to it in your response.
+"""
 
 def tool_config():
     return {
