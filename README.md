@@ -10,5 +10,7 @@
 
 ## Log
 11.27.2024 支持weather_tool
+
 11.28 2024 支持file_reader file_packer_for_lambda
+
 12.06 2024 支持computer use中的computer工具
