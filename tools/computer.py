@@ -294,7 +294,7 @@ def invoke(input_data):
         logging.info(f"input_data: {input_data}")
         computer = ComputerTool()
         response = asyncio.run(computer(**input_data))
-        tool_result_content = {}
+        tool_result_content = {"json": {}}
         if response.error:
             tool_result_content["json"]["Error"] = response.error
         if response.output:
